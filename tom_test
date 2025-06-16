@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NTT ExCパートナー研修ページ最適化インタラクティブダッシュボード</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: 報告書の直線的な構成ではなく、ユーザーが主要な洞察を自由に探索できるタブベースのダッシュボード構造を採用。この構造は「概要」「ペルソナ分析」「パーソナライズ戦略」「効果測定」の4つの主要セクションに分かれており、ビジネスユーザーが関心のある領域に直接アクセスし、深く掘り下げることを可能にする。各セクションは相互に関連しつつも独立しており、複雑な情報を消化しやすくするための最適なUXを提供すると判断したため、この対話的な構造を選択した。 -->
+    <!-- Visualization & Content Choices: 
+        - ペルソナ分析: Goal: 5つのペルソナの特性と行動を比較・理解する。 Viz: 棒グラフ（特性の多角的比較）、HTML/CSSによるファネル図（行動フロー）。 Interaction: ペルソナ選択ボタンで全ビジュアルが動的に更新される。 Justification: 棒グラフのデータは、各ペルソナの主要な特徴、関連するチェックボックス選択、および推測される目標に基づいて設定されており、それぞれのカテゴリに対する相対的な関心度や重要度を5段階（1:低〜5:高）で表している。これにより、ペルソナごとのニーズの傾向を直感的に比較し、全体像を素早く把握できる。 Library: Chart.js。
+        - パーソナライズ戦略: Goal: 各ペルソナへの具体的な施策を視覚的に示す。 Viz: HTML/CSSによる「Before/After」モックアップ、インタラクティブな戦略マトリックス。 Interaction: ドロップダウンでペルソナを選択し、関連する戦術を表示。 Justification: 抽象的な戦略を具体的なイメージに変換し、関係者の理解を促進する。 Library: -
+        - 効果測定: Goal: KPIとA/Bテスト計画を明確にする。 Viz: ラインチャート（時系列KPI追跡）、ドーナツチャート（満足度）。 Interaction: フィルターで表示するKPIを切り替える。 Justification: パフォーマンスデータを多角的に可視化し、データ駆動の意思決定を支援する。 Library: Chart.js。
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #FDFBF7;
+            color: #383A42;
+        }
+        .tab-active {
+            border-color: #4A90E2;
+            color: #4A90E2;
+            font-weight: 700;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .persona-card-active {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-color: #4A90E2;
+        }
+        .funnel-step {
+            position: relative;
+            background-color: #A6C8FF;
+            padding: 0.75rem 1.5rem;
+            margin: 0.5rem auto;
+            clip-path: polygon(0% 0%, 100% 0%, 92% 50%, 100% 100%, 0% 100%, 8% 50%);
+            text-align: center;
+            color: #1a365d;
+        }
+        .funnel-step-dropoff {
+            position: absolute;
+            top: 50%;
+            right: 100%;
+            transform: translateY(-50%);
+            margin-right: 1rem;
+            width: 120px;
+            font-size: 0.8rem;
+            color: #E53E3E;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">NTT ExCパートナー 研修ページ最適化提案</h1>
+            <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Ptengineのデータを活用したユーザー行動分析と、ペルソナに基づくパーソナライズ戦略のインタラクティブダッシュボード</p>
+        </header>
+
+        <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-8">
+            <nav class="flex flex-wrap justify-center border-b-2 border-gray-200 -mb-px">
+                <button data-tab="overview" class="tab-button text-base font-medium py-4 px-6 border-b-4 border-transparent hover:border-gray-300 focus:outline-none tab-active">概要</button>
+                <button data-tab="personas" class="tab-button text-base font-medium py-4 px-6 border-b-4 border-transparent hover:border-gray-300 focus:outline-none">ペルソナ分析</button>
+                <button data-tab="strategy" class="tab-button text-base font-medium py-4 px-6 border-b-4 border-transparent hover:border-gray-300 focus:outline-none">パーソナライズ戦略</button>
+                <button data-tab="measurement" class="tab-button text-base font-medium py-4 px-6 border-b-4 border-transparent hover:border-gray-300 focus:outline-none">効果測定</button>
+            </nav>
+        </div>
+        
+        <main>
+            <div id="overview-content" class="tab-content">
+                <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+                    <h2 class="text-2xl font-bold mb-4">エグゼクティブサマリー</h2>
+                    <p class="text-gray-700 leading-relaxed mb-4">本報告書は、NTT ExCパートナーの「研修・eラーニングを探す」ページにおけるユーザーエクスペリエンスの向上とコンバージョン率の最適化という課題に対し、戦略的なフレームワークを提示します。Ptengineの高度な機能を活用し、ユーザー行動データに基づいたペルソナの抽出、パーソナライズされたコンテンツの提供、そして効果測定のための堅牢な検証サイクルを提案することで、サイトのパフォーマンスを最大化することを目指します。</p>
+                    <div class="grid md:grid-cols-2 gap-6 mt-6">
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                            <h3 class="font-bold text-lg text-blue-800">コアな課題</h3>
+                            <p class="text-blue-700 mt-2">ユーザーの多様なニーズに応えきれておらず、機会損失が発生している可能性。</p>
+                        </div>
+                        <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+                            <h3 class="font-bold text-lg text-green-800">提案の核心</h3>
+                            <p class="text-green-700 mt-2">チェックボックス選択データを基にユーザーをペルソナ化し、体験を個別最適化する。</p>
+                        </div>
+                    </div>
+                     <h3 class="text-xl font-bold mt-8 mb-4">提案のサイクル</h3>
+                    <div class="flex flex-col md:flex-row justify-around items-center text-center">
+                        <div class="flex flex-col items-center p-4">
+                            <div class="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center text-3xl">1</div>
+                            <p class="mt-2 font-semibold">データ収集と<br>ペルソナ抽出</p>
+                        </div>
+                        <div class="text-3xl text-gray-400 my-4 md:my-0">→</div>
+                        <div class="flex flex-col items-center p-4">
+                             <div class="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center text-3xl">2</div>
+                            <p class="mt-2 font-semibold">パーソナライズ<br>戦略の策定</p>
+                        </div>
+                        <div class="text-3xl text-gray-400 my-4 md:my-0">→</div>
+                         <div class="flex flex-col items-center p-4">
+                             <div class="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center text-3xl">3</div>
+                            <p class="mt-2 font-semibold">A/Bテストによる<br>効果検証</p>
+                        </div>
+                         <div class="text-3xl text-gray-400 my-4 md:my-0">↺</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="personas-content" class="tab-content hidden">
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold">ペルソナ選択</h2>
+                    <p class="text-gray-600 mt-2">分析から抽出された5つの主要なユーザーペルソナです。カードをクリックして詳細を確認してください。</p>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+                    <button class="persona-button p-4 bg-white rounded-lg shadow border-2 border-transparent transition-all duration-300 persona-card-active" data-persona="p1">
+                        <span class="text-4xl">🚀</span>
+                        <h3 class="font-bold mt-2">キャリアスタート</h3>
+                    </button>
+                    <button class="persona-button p-4 bg-white rounded-lg shadow border-2 border-transparent transition-all duration-300" data-persona="p2">
+                        <span class="text-4xl">📈</span>
+                        <h3 class="font-bold mt-2">中堅プロ</h3>
+                    </button>
+                    <button class="persona-button p-4 bg-white rounded-lg shadow border-2 border-transparent transition-all duration-300" data-persona="p3">
+                        <span class="text-4xl">📜</span>
+                        <h3 class="font-bold mt-2">コンプライアンス</h3>
+                    </button>
+                    <button class="persona-button p-4 bg-white rounded-lg shadow border-2 border-transparent transition-all duration-300" data-persona="p4">
+                        <span class="text-4xl">💡</span>
+                        <h3 class="font-bold mt-2">専門スキルUP</h3>
+                    </button>
+                    <button class="persona-button p-4 bg-white rounded-lg shadow border-2 border-transparent transition-all duration-300" data-persona="p5">
+                        <span class="text-4xl">🏢</span>
+                        <h3 class="font-bold mt-2">組織学習担当</h3>
+                    </button>
+                </div>
+                <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+                    <div id="persona-details" class="grid lg:grid-cols-5 gap-8">
+                        <div class="lg:col-span-2">
+                            <h3 id="persona-name" class="text-2xl font-bold mb-2"></h3>
+                            <p id="persona-desc" class="text-gray-700 mb-4"></p>
+                            <div class="bg-gray-100 p-4 rounded-lg">
+                                <h4 class="font-semibold mb-2">主な目標（推測）</h4>
+                                <p id="persona-goal"></p>
+                            </div>
+                             <div class="mt-4 bg-gray-100 p-4 rounded-lg">
+                                <h4 class="font-semibold mb-2">関連チェックボックス選択</h4>
+                                <p id="persona-checkboxes"></p>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-3">
+                            <h4 class="font-semibold text-center mb-2">関心・ニーズの傾向（相対度: 1-5）</h4>
+                            <div class="chart-container">
+                                <canvas id="persona-bar-chart"></canvas>
+                            </div>
+                            <p class="text-sm text-gray-500 mt-2 text-center">
+                                この棒グラフのデータは、各ペルソナの主要な特徴、関連するチェックボックス選択、および推測される目標に基づき、各カテゴリへの相対的な関心度や重要度を**1（低）から5（高）**の5段階で表現しています。これは仮説的な傾向を示すものであり、実際のデータによって検証されるべき指標です。
+                            </p>
+                        </div>
+                    </div>
+                    <div class="mt-12">
+                        <h3 class="text-xl font-bold text-center mb-4">典型的な行動フローと離脱ポイント</h3>
+                        <div class="max-w-md mx-auto">
+                            <div id="persona-funnel"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="strategy-content" class="tab-content hidden">
+                 <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+                    <h2 class="text-2xl font-bold mb-4">パーソナライズ戦略マトリックス</h2>
+                    <p class="text-gray-600 mb-6">各ペルソナに対して、どのようなパーソナライズ施策が有効かをマッピングします。ペルソナを選択して具体的な戦術を確認してください。</p>
+                    <div class="mb-6">
+                        <select id="strategy-persona-selector" class="w-full md:w-1/3 p-2 border border-gray-300 rounded-md">
+                            <option value="p1">キャリアスタート - IT基礎</option>
+                            <option value="p2">中堅プロフェッショナル - リーダーシップ開発</option>
+                            <option value="p3">コンプライアンス志向者 - 法令研修</option>
+                        </select>
+                    </div>
+                    <div id="strategy-details">
+                    </div>
+                 </div>
+            </div>
+
+            <div id="measurement-content" class="tab-content hidden">
+                 <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+                    <h2 class="text-2xl font-bold mb-4">効果測定とKPIダッシュボード</h2>
+                    <p class="text-gray-600 mb-8">パーソナライズ戦略の効果を測定するためのフレームワークです。主要なKPIを継続的に監視し、データに基づいた改善サイクルを確立します。</p>
+                    
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div>
+                             <h3 class="font-semibold text-center mb-2">KPI: 登録コンバージョン率 (ペルソナ別)</h3>
+                             <div class="chart-container h-80">
+                                <canvas id="kpi-conversion-chart"></canvas>
+                            </div>
+                        </div>
+                        <div>
+                             <h3 class="font-semibold text-center mb-2">KPI: ユーザー満足度</h3>
+                             <div class="chart-container h-80">
+                                <canvas id="kpi-satisfaction-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-12">
+                        <h3 class="text-xl font-bold mb-4">A/Bテスト計画の例</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full bg-white">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="py-2 px-4 text-left">テストID</th>
+                                        <th class="py-2 px-4 text-left">仮説</th>
+                                        <th class="py-2 px-4 text-left">ターゲット</th>
+                                        <th class="py-2 px-4 text-left">主要KPI</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ab-test-table">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                 </div>
+            </div>
+        </main>
+    </div>
+
+<script>
+const personaData = {
+    p1: {
+        name: "キャリアスタート - IT基礎",
+        desc: "新しいキャリアをIT分野で始めたい、基礎知識や資格取得に強い関心を持つユーザー層。",
+        goal: "エントリーレベルのIT認定資格を取得し、IT業界への転職やキャリアチェンジを成功させること。",
+        checkboxes: "対象者:新入社員/若手社員, 形式:eラーニング, 研修テーマ:技術力強化",
+        radarData: [5, 1, 1, 5, 2], // ITスキル:5, マネジメント:1, 法令・規制:1, 資格取得:5, 専門技術:2 (相対度)
+        funnel: [
+            {step: '研修検索ページ訪問', rate: '100%'},
+            {step: 'チェックボックス選択', rate: '85%', dropoff: '15%離脱'},
+            {step: 'コース詳細閲覧', rate: '60%', dropoff: '25%離脱 (選択肢多すぎ？)'},
+            {step: '申し込みフォーム', rate: '20%', dropoff: '40%離脱 (料金/期間)'},
+            {step: '完了', rate: '10%'}
+        ],
+    },
+    p2: {
+        name: "中堅プロフェッショナル - リーダーシップ開発",
+        desc: "現職でのスキルアップ、特にマネジメント能力の向上や昇進を目指す経験豊富な専門職。",
+        goal: "昇進のためのリーダーシップスキルを向上させ、チームマネジメント能力を強化すること。",
+        checkboxes: "対象者:中堅社員/主査/係長/課長, 業務内容:経営企画/人事, 形式:座学研修, 研修テーマ:リーダーシップ/マネジメント/組織活性化",
+        radarData: [1, 5, 2, 3, 1], // ITスキル:1, マネジメント:5, 法令・規制:2, 資格取得:3, 専門技術:1 (相対度)
+        funnel: [
+            {step: '研修検索ページ訪問', rate: '100%'},
+            {step: 'チェックボックス選択', rate: '90%', dropoff: '10%離脱'},
+            {step: 'コース詳細閲覧', rate: '75%', dropoff: '15%離脱'},
+            {step: '申し込みフォーム', rate: '40%', dropoff: '35%離脱 (日程/費用対効果)'},
+            {step: '完了', rate: '25%'}
+        ],
+    },
+    p3: {
+        name: "コンプライアンス志向者 - 法令研修",
+        desc: "業界の規制や法令遵守が必須であり、最新情報や必須研修を効率的に探しているユーザー。",
+        goal: "業界の必須コンプライアンス要件を迅速に達成し、ビジネスリスクを回避すること。",
+        checkboxes: "対象者:すべて, 形式:eラーニング, 研修テーマ:CSR・コンプライアンス",
+        radarData: [1, 2, 5, 4, 1], // ITスキル:1, マネジメント:2, 法令・規制:5, 資格取得:4, 専門技術:1 (相対度)
+        funnel: [
+            {step: '研修検索ページ訪問', rate: '100%'},
+            {step: 'キーワード検索', rate: '80%', dropoff: '20%離脱 (探しにくい)'},
+            {step: 'コース詳細閲覧', rate: '70%', dropoff: '10%離脱'},
+            {step: '申し込みフォーム', rate: '55%', dropoff: '15%離脱'},
+            {step: '完了', rate: '50%'}
+        ],
+    },
+    p4: {
+        name: "専門スキルアップ - 特定技術",
+        desc: "特定の技術分野（例：AI、クラウド）で、より深い知識や実践的なスキルを習得したい技術者。",
+        goal: "最新技術を習得し、自身の専門分野における市場競争力を強化すること。",
+        checkboxes: "対象者:若手社員/中堅社員/主査/係長, 業務内容:PM/SE, 形式:座学研修/体感型研修, 研修テーマ:技術力強化/ビジネス開発",
+        radarData: [5, 1, 1, 2, 5], // ITスキル:5, マネジメント:1, 法令・規制:1, 資格取得:2, 専門技術:5 (相対度)
+        funnel: [
+            {step: '研修検索ページ訪問', rate: '100%'},
+            {step: 'カテゴリ閲覧', rate: '95%', dropoff: '5%離脱'},
+            {step: 'コース詳細閲覧', rate: '70%', dropoff: '25%離脱 (内容が期待と違う)'},
+            {step: '申し込みフォーム', rate: '30%', dropoff: '40%離脱 (前提スキル/価格)'},
+            {step: '完了', rate: '20%'}
+        ],
+    },
+    p5: {
+        name: "組織学習担当者 - 研修プログラム導入",
+        desc: "企業全体の研修プログラム導入や、従業員のスキル開発の効率化をミッションとする人事・育成担当者。",
+        goal: "効果的な研修プログラムを導入し、従業員のスキル向上と研修コストの最適化を両立させること。",
+        checkboxes: "対象者:経営層, 業務内容:経営企画/人事, 形式:座学研修/体感型研修/eラーニング, 研修テーマ:研修運営/組織活性化/経営戦略",
+        radarData: [3, 4, 3, 2, 3], // ITスキル:3, マネジメント:4, 法令・規制:3, 資格取得:2, 専門技術:3 (相対度)
+        funnel: [
+            {step: '法人向けページ訪問', rate: '100%'},
+            {step: '資料請求', rate: '50%', dropoff: '50%離脱 (情報不足)'},
+            {step: '問い合わせ', rate: '25%', dropoff: '25%離脱'},
+            {step: '商談', rate: '15%', dropoff: '10%離脱'},
+            {step: '契約', rate: '10%'}
+        ],
+    }
+};
+
+const strategyData = {
+    p1: [
+        { tactic: "動的なヒーローセクション", detail: "「スタートアップのためのIT基礎研修」のような、ITキャリアの始まりを想起させる見出しと画像に変更。", before: "汎用的な研修案内", after: "若手プロフェッショナルが学ぶイメージ" },
+        { tactic: "パーソナライズされたコース推奨", detail: "プログラミング入門、基本ネットワークなど、初心者向けかつ資格取得に繋がるコースを優先的に表示。", before: "人気ランキング", after: "「最初のステップ」におすすめ" },
+        { tactic: "コンテキストに応じた離脱ポップアップ", detail: "離脱しようとする際に「初めてのITコースの選び方」といった無料ガイドを提供し、リードを獲得。", before: "ポップアップなし", after: "お役立ち情報の提供" }
+    ],
+    p2: [
+        { tactic: "動的なヒーローセクション", detail: "「リーダーシップを磨き、キャリアを加速」といった、昇進や責任の拡大をイメージさせる見出しと画像に。", before: "汎用的な研修案内", after: "会議でリーダーシップを発揮するイメージ" },
+        { tactic: "パーソナライズされたコース推奨", detail: "戦略的マネジメント、チームビルディング、エグゼクティブコーチングなど、高度な研修を推奨。", before: "人気ランキング", after: "「次のステージへ」のおすすめ" },
+        { tactic: "コンテキストに応じたCTA", detail: "コース詳細ページで「上級者向け相談会に申し込む」など、具体的な次のアクションを提示。", before: "「詳細を見る」", after: "「専門家に相談する」" }
+    ],
+    p3: [
+        { tactic: "動的なヒーローセクション", detail: "「コンプライアンスを維持：必須の規制研修」といった、緊急性と信頼性を訴求する見出しとデザインに。", before: "汎用的な研修案内", after: "法令文書とオフィスビル" },
+        { tactic: "パーソナライズされたコース推奨", detail: "自社の業界に関連する必須研修や、最新の法改正に対応したコースを最上部に表示。", before: "人気ランキング", after: "「必須・推奨」研修" },
+        { tactic: "パーソナライズされたナビゲーション", detail: "「法令・規制」カテゴリへのショートカットをナビゲーションメニューに表示し、アクセスを容易にする。", before: "標準メニュー", after: "「法令研修」をハイライト" }
+    ]
+};
+
+const abTestData = [
+    { id: 'ABT-001', hypothesis: '「キャリアスタート」向けにヒーローバナーをパーソナライズすると、「初心者ITコース」へのクリック率が15%増加する。', target: 'キャリアスタート', kpi: 'リンククリック率' },
+    { id: 'ABT-002', hypothesis: '「中堅プロ」向けに推奨コースをパーソナライズすると、関連コース詳細ページの閲覧数が増加する。', target: '中堅プロ', kpi: 'コース詳細PV' },
+    { id: 'ABT-003', hypothesis: '「コンプライアンス」ペルソナの離脱時に無料ガイドのポップアップを表示すると、リード獲得率が5%向上する。', target: 'コンプライアンス', kpi: 'リード獲得率' }
+];
+
+let personaBarChart, kpiConversionChart, kpiSatisfactionChart;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const tabs = document.querySelectorAll('.tab-button');
+    const contents = document.querySelectorAll('.tab-content');
+    const personaButtons = document.querySelectorAll('.persona-button');
+
+    const setActiveTab = (tabId) => {
+        tabs.forEach(t => {
+            if (t.dataset.tab === tabId) {
+                t.classList.add('tab-active');
+            } else {
+                t.classList.remove('tab-active');
+            }
+        });
+        contents.forEach(c => {
+            if (c.id === `${tabId}-content`) {
+                c.classList.remove('hidden');
+            } else { // Removed the unexpected dot here
+                c.classList.add('hidden');
+            }
+        });
+    };
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => setActiveTab(tab.dataset.tab));
+    });
+
+    personaButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            personaButtons.forEach(btn => btn.classList.remove('persona-card-active'));
+            button.classList.add('persona-card-active');
+            updatePersonaView(button.dataset.persona);
+        });
+    });
+
+    const strategyPersonaSelector = document.getElementById('strategy-persona-selector');
+    strategyPersonaSelector.addEventListener('change', (e) => {
+        updateStrategyView(e.target.value);
+    });
+
+    initCharts();
+    updatePersonaView('p1'); 
+    updateStrategyView('p1');
+    populateAbTestTable();
+});
+
+function updatePersonaView(personaId) {
+    const data = personaData[personaId];
+    if (!data) return;
+
+    document.getElementById('persona-name').textContent = data.name;
+    document.getElementById('persona-desc').textContent = data.desc;
+    document.getElementById('persona-goal').textContent = data.goal;
+    document.getElementById('persona-checkboxes').textContent = data.checkboxes;
+
+    personaBarChart.data.datasets[0].data = data.radarData;
+    personaBarChart.update();
+    
+    const funnelContainer = document.getElementById('persona-funnel');
+    funnelContainer.innerHTML = '';
+    data.funnel.forEach((item, index) => {
+        const stepDiv = document.createElement('div');
+        stepDiv.className = 'funnel-step';
+        stepDiv.style.width = `${100 - index * 10}%`;
+        stepDiv.style.backgroundColor = `rgba(74, 144, 226, ${1 - index * 0.15})`;
+
+        let content = `<span class="font-bold">${item.step}</span><br><span class="text-sm">${item.rate}</span>`;
+        if (item.dropoff) {
+            content += `<div class="funnel-step-dropoff">▼ ${item.dropoff}</div>`;
+        }
+        stepDiv.innerHTML = content;
+        funnelContainer.appendChild(stepDiv);
+    });
+}
+
+function updateStrategyView(personaId) {
+    const data = strategyData[personaId];
+    const container = document.getElementById('strategy-details');
+    if (!data || !container) return;
+    
+    container.innerHTML = '';
+    data.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200';
+        div.innerHTML = `
+            <h4 class="text-xl font-bold text-gray-800">${item.tactic}</h4>
+            <p class="text-gray-600 my-2">${item.detail}</p>
+            <div class="grid md:grid-cols-2 gap-4 mt-4">
+                <div class="border p-4 rounded-md bg-white">
+                    <p class="text-sm font-semibold text-gray-500">Before</p>
+                    <p class="text-lg font-medium mt-1">${item.before}</p>
+                </div>
+                <div class="border p-4 rounded-md bg-blue-100 border-blue-300">
+                    <p class="text-sm font-semibold text-blue-800">After (提案)</p>
+                    <p class="text-lg font-medium mt-1 text-blue-900">${item.after}</p>
+                </div>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function populateAbTestTable() {
+    const tableBody = document.getElementById('ab-test-table');
+    tableBody.innerHTML = '';
+    abTestData.forEach(test => {
+        const row = document.createElement('tr');
+        row.className = 'border-b';
+        row.innerHTML = `
+            <td class="py-3 px-4">${test.id}</td>
+            <td class="py-3 px-4">${test.hypothesis}</td>
+            <td class="py-3 px-4">${test.target}</td>
+            <td class="py-3 px-4 font-semibold">${test.kpi}</td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+function initCharts() {
+    const barCtx = document.getElementById('persona-bar-chart').getContext('2d');
+    personaBarChart = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+            labels: ['ITスキル', 'マネジメント', '法令・規制', '資格取得', '専門技術'],
+            datasets: [{
+                label: '関心度',
+                data: [0, 0, 0, 0, 0],
+                backgroundColor: 'rgba(74, 144, 226, 0.7)',
+                borderColor: 'rgba(74, 144, 226, 1)',
+                borderWidth: 1,
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: 5,
+                    ticks: { stepSize: 1 }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    const conversionCtx = document.getElementById('kpi-conversion-chart').getContext('2d');
+    kpiConversionChart = new Chart(conversionCtx, {
+        type: 'line',
+        data: {
+            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            datasets: [
+                {
+                    label: 'キャリアスタート',
+                    data: [1.8, 2.0, 2.5, 2.7],
+                    borderColor: '#4A90E2',
+                    tension: 0.1,
+                    fill: false,
+                },
+                {
+                    label: '中堅プロ',
+                    data: [3.2, 3.1, 3.5, 3.8],
+                    borderColor: '#50E3C2',
+                    tension: 0.1,
+                    fill: false,
+                },
+                {
+                    label: '全体平均',
+                    data: [2.5, 2.6, 3.0, 3.3],
+                    borderColor: '#BD10E0',
+                    borderDash: [5, 5],
+                    tension: 0.1,
+                    fill: false,
+                }
+            ]
+        },
+        options: {
+            maintainAspectRatio: false,
+            responsive: true,
+            scales: { y: { beginAtZero: true, suggestedMax: 5, ticks: { callback: value => value + '%' } } },
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+
+    const satisfactionCtx = document.getElementById('kpi-satisfaction-chart').getContext('2d');
+    kpiSatisfactionChart = new Chart(satisfactionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['満足 (4.2)', '改善の余地'],
+            datasets: [{
+                data: [84, 16], // 4.2/5 = 84%
+                backgroundColor: ['#4A90E2', '#E9E9E9'],
+                borderWidth: 0,
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            responsive: true,
+            rotation: -90,
+            circumference: 180,
+            cutout: '70%',
+            plugins: { legend: { display: false }, title: { display: true, text: '目標: 4.2 / 5.0' } }
+        }
+    });
+}
+</script>
+</body>
+</html>
